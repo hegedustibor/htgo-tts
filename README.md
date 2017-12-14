@@ -14,6 +14,11 @@ go get "github.com/hegedustibor/htgo-tts"
 go get -u "github.com/hegedustibor/htgo-tts"
 ```
 
+### Remove
+```
+go clean -i "github.com/hegedustibor/htgo-tts"
+```
+
 ### Import
 ```go
 import "github.com/hegedustibor/htgo-tts"
