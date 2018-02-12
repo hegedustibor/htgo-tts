@@ -1,65 +1,88 @@
 package htgotts
 
-import "os/exec"
-import "net/url"
-import "os"
-import "fmt"
+import (
+	"fmt"
+	"io"
+	"net/http"
+	"net/url"
+	"os"
+	"os/exec"
+)
 
 /**
  * Required:
- * 	- wget
- *  - mplayer
- * 
+ * - mplayer
+ *
  * Use:
- * 
+ *
  * speech := htgotts.Speech{Folder: "audio", Language: "en"}
  */
 
+// Speech struct
 type Speech struct {
-	Folder string
-    Language string
+	Folder   string
+	Language string
 }
 
-func (speech *Speech) Speak(text string) {
+// Speak downloads speech and plays it using mplayer
+func (speech *Speech) Speak(text string) error {
 
 	fileName := speech.Folder + "/" + text + ".mp3"
 
-	speech.createFolderIfNotExists(speech.Folder)
-	speech.downloadIfNotExists(fileName, text)
-	speech.play(fileName)
-	
+	var err error
+	if err = speech.createFolderIfNotExists(speech.Folder); err != nil {
+		return err
+	}
+	if err = speech.downloadIfNotExists(fileName, text); err != nil {
+		return err
+	}
+
+	return speech.play(fileName)
 }
 
 /**
  * Create the folder if does not exists.
  */
-func (speech *Speech) createFolderIfNotExists(folder string) {
+func (speech *Speech) createFolderIfNotExists(folder string) error {
 	dir, err := os.Open(folder)
 	if os.IsNotExist(err) {
-		_ = os.MkdirAll(folder, 0700)
+		return os.MkdirAll(folder, 0700)
 	}
-	defer dir.Close()
+
+	dir.Close()
+	return nil
 }
 
 /**
  * Download the voice file if does not exists.
  */
-func (speech *Speech) downloadIfNotExists(fileName string, text string) {
+func (speech *Speech) downloadIfNotExists(fileName string, text string) error {
 	f, err := os.Open(fileName)
-	if os.IsNotExist(err) {
-		fmt.Println("\n--- Downloading voice...")
-		url := "http://translate.google.com/translate_tts?ie=UTF-8&total=1&idx=0&textlen=32&client=tw-ob&q=" + url.QueryEscape(text) + "&tl=" + speech.Language
-		download:= exec.Command("wget", "-q", "-U", "Mozilla", "-O", fileName, url)
-		download.Run()
-		fmt.Println("--- Voice is downloaded.\n")
+	if err != nil {
+		url := fmt.Sprintf("http://translate.google.com/translate_tts?ie=UTF-8&total=1&idx=0&textlen=32&client=tw-ob&q=%s&tl=%s", url.QueryEscape(text), speech.Language)
+		response, err := http.Get(url)
+		if err != nil {
+			return err
+		}
+		defer response.Body.Close()
+
+		output, err := os.Create(fileName)
+		if err != nil {
+			return err
+		}
+
+		_, err = io.Copy(output, response.Body)
+		return err
 	}
-	defer f.Close()
+
+	f.Close()
+	return nil
 }
 
 /**
  * Play voice file.
  */
-func (speech *Speech) play(fileName string) {
+func (speech *Speech) play(fileName string) error {
 	mplayer := exec.Command("mplayer", "-cache", "8092", "-", fileName)
-	mplayer.Run()
+	return mplayer.Run()
 }
