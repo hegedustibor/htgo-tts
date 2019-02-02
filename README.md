@@ -1,8 +1,7 @@
 # htgo-tts
 [https://hegedustibor.github.io/htgo-tts/](https://hegedustibor.github.io/htgo-tts/)
 
-### Requirements:
-- wget
+### Requirement:
 - mplayer
 
 ### Install
@@ -27,6 +26,6 @@ import "github.com/hegedustibor/htgo-tts"
 
 ### Use
 ```go
-speech := htgotts.Speech{Folder: "audio", Language: "hu"}
+speech := htgotts.Speech{Folder: "audio", Language: "en"}
 speech.Speak("Your sentence.")
 ```
