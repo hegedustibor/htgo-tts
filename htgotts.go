@@ -6,12 +6,12 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"os/exec"
+
+	"github.com/hajimehoshi/go-mp3"
+	"github.com/hajimehoshi/oto"
 )
 
 /**
- * Required:
- * - mplayer
  *
  * Use:
  *
@@ -24,7 +24,7 @@ type Speech struct {
 	Language string
 }
 
-// Speak downloads speech and plays it using mplayer
+// Speak downloads speech and plays it using go-mp3
 func (speech *Speech) Speak(text string) error {
 
 	fileName := speech.Folder + "/" + text + ".mp3"
@@ -83,6 +83,29 @@ func (speech *Speech) downloadIfNotExists(fileName string, text string) error {
  * Play voice file.
  */
 func (speech *Speech) play(fileName string) error {
-	mplayer := exec.Command("mplayer", "-cache", "8092", "-", fileName)
-	return mplayer.Run()
+
+	f, err := os.Open(fileName)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	d, err := mp3.NewDecoder(f)
+	if err != nil {
+		return err
+	}
+
+	c, err := oto.NewContext(d.SampleRate(), 2, 2, 8192)
+	if err != nil {
+		return err
+	}
+	defer c.Close()
+
+	p := c.NewPlayer()
+	defer p.Close()
+
+	if _, err := io.Copy(p, d); err != nil {
+		return err
+	}
+	return nil
 }

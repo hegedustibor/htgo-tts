@@ -1,13 +1,16 @@
 # htgo-tts
 [https://hegedustibor.github.io/htgo-tts/](https://hegedustibor.github.io/htgo-tts/)
 
-### Requirement:
-- mplayer
-
 ### Install
 ```
 go get "github.com/hegedustibor/htgo-tts"
+go get "github.com/hajimehoshi/go-mp3"
+go get "github.com/hajimehoshi/oto"
 ```
+
+#### Setup
+
+If you're using Linux see https://github.com/hajimehoshi/oto for setup instructions.
 
 ### Update
 ```
@@ -28,4 +31,8 @@ import "github.com/hegedustibor/htgo-tts"
 ```go
 speech := htgotts.Speech{Folder: "audio", Language: "en"}
 speech.Speak("Your sentence.")
+```
+Or run the example file via
+``` 
+go run example/main.go
 ```
