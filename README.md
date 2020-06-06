@@ -2,7 +2,7 @@
 [https://hegedustibor.github.io/htgo-tts/](https://hegedustibor.github.io/htgo-tts/)
 
 ### Requirement:
-- mplayer
+- mplayer (optional)
 
 ### Install
 ```
@@ -29,3 +29,16 @@ import "github.com/hegedustibor/htgo-tts"
 speech := htgotts.Speech{Folder: "audio", Language: "en"}
 speech.Speak("Your sentence.")
 ```
+
+### Use with Handlers
+```go
+import (
+    htgotts "github.com/hegedustibor/htgo-tts"
+    handlers "github.com/hegedustibor/htgo-tts/handlers"
+)
+
+speech := htgotts.Speech{Folder: "audio", Language: "en", Handler: &handlers.MPlayer{}}
+speech.Speak("Your sentence.")
+```
+
+Have Fun!

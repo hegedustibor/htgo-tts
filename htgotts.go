@@ -1,12 +1,12 @@
 package htgotts
 
 import (
+	"./handlers"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
 	"os"
-	"os/exec"
 )
 
 /**
@@ -15,13 +15,14 @@ import (
  *
  * Use:
  *
- * speech := htgotts.Speech{Folder: "audio", Language: "en"}
+ * speech := htgotts.Speech{Folder: "audio", Language: "en", Handler: MPlayer}
  */
 
 // Speech struct
 type Speech struct {
 	Folder   string
 	Language string
+	Handler handlers.PlayerInterface
 }
 
 // Speak downloads speech and plays it using mplayer
@@ -37,7 +38,12 @@ func (speech *Speech) Speak(text string) error {
 		return err
 	}
 
-	return speech.play(fileName)
+	if speech.Handler == nil {
+		mplayer := handlers.MPlayer{}
+		return mplayer.Play(fileName)
+	}
+
+	return speech.Handler.Play(fileName)
 }
 
 /**
@@ -77,12 +83,4 @@ func (speech *Speech) downloadIfNotExists(fileName string, text string) error {
 
 	f.Close()
 	return nil
-}
-
-/**
- * Play voice file.
- */
-func (speech *Speech) play(fileName string) error {
-	mplayer := exec.Command("mplayer", "-cache", "8092", "-", fileName)
-	return mplayer.Run()
 }
