@@ -1,8 +1,8 @@
 package htgotts
 
 import (
-	"./handlers"
 	"fmt"
+	"github.com/hegedustibor/htgo-tts/handlers"
 	"io"
 	"net/http"
 	"net/url"

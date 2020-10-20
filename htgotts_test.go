@@ -1,7 +1,7 @@
 package htgotts
 
 import "testing"
-import "./handlers"
+import "github.com/hegedustibor/htgo-tts/handlers"
 
 func TestSpeech_Speak(t *testing.T) {
 	speech := Speech{Folder: "audio", Language: "en"}
