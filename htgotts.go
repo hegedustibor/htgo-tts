@@ -1,12 +1,15 @@
 package htgotts
 
 import (
+	"crypto/md5"
+	"encoding/hex"
 	"fmt"
-	"github.com/hegedustibor/htgo-tts/handlers"
 	"io"
 	"net/http"
 	"net/url"
 	"os"
+
+	"github.com/hegedustibor/htgo-tts/handlers"
 )
 
 /**
@@ -22,15 +25,16 @@ import (
 type Speech struct {
 	Folder   string
 	Language string
-	Handler handlers.PlayerInterface
+	Handler  handlers.PlayerInterface
 }
 
 // Speak downloads speech and plays it using mplayer
 func (speech *Speech) Speak(text string) error {
 
-	fileName := speech.Folder + "/" + text + ".mp3"
-
 	var err error
+	generatedHashName := speech.generateHashName(text)
+	fileName := speech.Folder + "/" + generatedHashName + ".mp3"
+
 	if err = speech.createFolderIfNotExists(speech.Folder); err != nil {
 		return err
 	}
@@ -83,4 +87,9 @@ func (speech *Speech) downloadIfNotExists(fileName string, text string) error {
 
 	f.Close()
 	return nil
+}
+
+func (speech *Speech) generateHashName(name string) string {
+	hash := md5.Sum([]byte(name))
+	return hex.EncodeToString(hash[:])
 }
