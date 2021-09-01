@@ -22,11 +22,12 @@ go clean -i "github.com/hegedustibor/htgo-tts"
 ### Import
 ```go
 import "github.com/hegedustibor/htgo-tts"
+import "github.com/hegedustibor/htgo-tts/voices"
 ```
 
 ### Use
 ```go
-speech := htgotts.Speech{Folder: "audio", Language: "en"}
+speech := htgotts.Speech{Folder: "audio", Language: voices.English}
 speech.Speak("Your sentence.")
 ```
 
@@ -37,7 +38,7 @@ import (
     handlers "github.com/hegedustibor/htgo-tts/handlers"
 )
 
-speech := htgotts.Speech{Folder: "audio", Language: "en", Handler: &handlers.MPlayer{}}
+speech := htgotts.Speech{Folder: "audio", Language: voices.English, Handler: &handlers.MPlayer{}}
 speech.Speak("Your sentence.")
 ```
 
