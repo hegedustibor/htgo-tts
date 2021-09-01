@@ -36,6 +36,7 @@ speech.Speak("Your sentence.")
 import (
     htgotts "github.com/hegedustibor/htgo-tts"
     handlers "github.com/hegedustibor/htgo-tts/handlers"
+    voices "github.com/hegedustibor/htgo-tts/voices"
 )
 
 speech := htgotts.Speech{Folder: "audio", Language: voices.English, Handler: &handlers.MPlayer{}}
