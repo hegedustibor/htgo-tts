@@ -91,5 +91,5 @@ func (speech *Speech) downloadIfNotExists(fileName string, text string) error {
 
 func (speech *Speech) generateHashName(name string) string {
 	hash := md5.Sum([]byte(name))
-	return hex.EncodeToString(hash[:])
+	return fmt.Sprintf("%s_%s", speech.Language, hex.EncodeToString(hash[:]))
 }
