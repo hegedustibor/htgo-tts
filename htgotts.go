@@ -31,15 +31,17 @@ type Speech struct {
 // Creates a speech file with a given name
 func (speech *Speech) CreateSpeechFile(text string, fileName string) (string, error) {
 	var err error
-	fileName := speech.Folder + "/" + fileName + ".mp3"
+	
+	f := speech.Folder + "/" + fileName + ".mp3"
 	if err = speech.createFolderIfNotExists(speech.Folder); err != nil {
 		return nil, err
 	}
-	if err = speech.downloadIfNotExists(fileName, text); err != nil {
+	
+	if err = speech.downloadIfNotExists(f, text); err != nil {
 		return nil, err
 	}
 	
-	return fileName, nil
+	return f, nil
 }
 
 // Plays an existent .mp3 file
@@ -58,7 +60,7 @@ func (speech *Speech) Speak(text string) error {
 	var err error
 	generatedHashName := speech.generateHashName(text)
 	
-	fileName, err := speech.CreateSpeechFile(text, fileName)
+	fileName, err := speech.CreateSpeechFile(text, generatedHashName)
 	if err != nil {
 		return err
 	}
