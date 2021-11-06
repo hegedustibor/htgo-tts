@@ -28,26 +28,44 @@ type Speech struct {
 	Handler  handlers.PlayerInterface
 }
 
-// Speak downloads speech and plays it using mplayer
-func (speech *Speech) Speak(text string) error {
-
+// Creates a speech file with a given name
+func (speech *Speech) CreateSpeechFile(text string, fileName string) (string, error) {
 	var err error
-	generatedHashName := speech.generateHashName(text)
-	fileName := speech.Folder + "/" + generatedHashName + ".mp3"
 
+	f := speech.Folder + "/" + fileName + ".mp3"
 	if err = speech.createFolderIfNotExists(speech.Folder); err != nil {
-		return err
-	}
-	if err = speech.downloadIfNotExists(fileName, text); err != nil {
-		return err
+		return "", err
 	}
 
+	if err = speech.downloadIfNotExists(f, text); err != nil {
+		return "", err
+	}
+
+	return f, nil
+}
+
+// Plays an existent .mp3 file
+func (speech *Speech) PlaySpeechFile(fileName string) error {
 	if speech.Handler == nil {
 		mplayer := handlers.MPlayer{}
 		return mplayer.Play(fileName)
 	}
 
 	return speech.Handler.Play(fileName)
+}
+
+// Speak downloads speech and plays it using mplayer
+func (speech *Speech) Speak(text string) error {
+
+	var err error
+	generatedHashName := speech.generateHashName(text)
+
+	fileName, err := speech.CreateSpeechFile(text, generatedHashName)
+	if err != nil {
+		return err
+	}
+
+	return speech.PlaySpeechFile(fileName)
 }
 
 /**
