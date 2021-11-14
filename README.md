@@ -1,3 +1,5 @@
+![HTGO-TTS](https://banners.beyondco.de/HTGO-TTS.png?theme=light&packageManager=&packageName=go+get+%22github.com%2Fhegedustibor%2Fhtgo-tts%22&pattern=bamboo&style=style_1&description=Text+to+Speech+Package+for+GoLang&md=1&showWatermark=0&fontSize=100px&images=volume-up)
+
 # htgo-tts
 [https://hegedustibor.github.io/htgo-tts/](https://hegedustibor.github.io/htgo-tts/)
 
