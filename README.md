@@ -45,4 +45,19 @@ speech := htgotts.Speech{Folder: "audio", Language: voices.English, Handler: &ha
 speech.Speak("Your sentence.")
 ```
 
+### Use tts without external player
+
+Note: The "Native" handler works around the Oto librery, see the ["Prerequisite"](https://github.com/hajimehoshi/oto/blob/main/README.md#prerequisite) section to work with this handler 
+
+```go
+import (
+    htgotts "github.com/hegedustibor/htgo-tts"
+    handlers "github.com/hegedustibor/htgo-tts/handlers"
+    voices "github.com/hegedustibor/htgo-tts/voices"
+)
+
+speech := htgotts.Speech{Folder: "audio", Language: voices.English, Handler: &handlers.Native{}}
+speech.Speak("Your sentence.")
+```
+
 Have Fun!

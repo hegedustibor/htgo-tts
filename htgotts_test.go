@@ -17,6 +17,11 @@ func TestSpeech_Speak_MPlayer_Handler(t *testing.T) {
 	speech.Speak("Test")
 }
 
+func TestSpeech_Speak_Native_Handler(t *testing.T) {
+	speech := Speech{Folder: "audio", Language: voices.English, Handler: &handlers.Native{}}
+	speech.Speak("Test")
+}
+
 func TestSpeech_Speak_voice_UkEnglish(t *testing.T) {
 	speech := Speech{Folder: "audio", Language: voices.EnglishUK}
 	speech.Speak("Lancaster")
