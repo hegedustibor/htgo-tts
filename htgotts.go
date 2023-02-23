@@ -2,6 +2,7 @@ package htgotts
 
 import (
 	"crypto/md5"
+	"crypto/tls"
 	"encoding/hex"
 	"fmt"
 	"io"
@@ -25,6 +26,7 @@ import (
 type Speech struct {
 	Folder   string
 	Language string
+	Proxy    string
 	Handler  handlers.PlayerInterface
 }
 
@@ -87,8 +89,25 @@ func (speech *Speech) createFolderIfNotExists(folder string) error {
 func (speech *Speech) downloadIfNotExists(fileName string, text string) error {
 	f, err := os.Open(fileName)
 	if err != nil {
-		url := fmt.Sprintf("http://translate.google.com/translate_tts?ie=UTF-8&total=1&idx=0&textlen=32&client=tw-ob&q=%s&tl=%s", url.QueryEscape(text), speech.Language)
-		response, err := http.Get(url)
+		dlURL := fmt.Sprintf("http://translate.google.com/translate_tts?ie=UTF-8&total=1&idx=0&textlen=32&client=tw-ob&q=%s&tl=%s", url.QueryEscape(text), speech.Language)
+		var (
+			response *http.Response
+		)
+		if speech.Proxy != "" {
+			var proxyURL *url.URL
+			proxyURL, err = url.Parse(speech.Proxy)
+			if err != nil {
+				return err
+			}
+			httpCli := &http.Client{Transport: &http.Transport{
+				Proxy:           http.ProxyURL(proxyURL),
+				TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+			}}
+			response, err = httpCli.Get(dlURL)
+		} else {
+			response, err = http.Get(dlURL)
+		}
+		response, err = http.Get(dlURL)
 		if err != nil {
 			return err
 		}
