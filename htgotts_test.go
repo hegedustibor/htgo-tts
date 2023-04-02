@@ -4,6 +4,7 @@ import (
 	"github.com/hegedustibor/htgo-tts/handlers"
 	"github.com/hegedustibor/htgo-tts/voices"
 
+	"fmt"
 	"testing"
 )
 
@@ -47,4 +48,13 @@ func TestSpeech_(t *testing.T) {
 		t.Fatalf("CreateSpeechFile fail %v", err)
 	}
 	speech.PlaySpeechFile(f)
+}
+
+func TestSpeech_WithProxy(t *testing.T) {
+	speech := Speech{
+		Folder:   "audio",
+		Language: voices.English,
+		Proxy:    fmt.Sprintf("http://translate.google.com/translate_tts?ie=UTF-8&total=1&idx=0&textlen=32&client=tw-ob&q=%s&tl=%s", "Test", voices.English),
+	}
+	speech.Speak("Test")
 }
