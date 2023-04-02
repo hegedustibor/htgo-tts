@@ -60,4 +60,16 @@ speech := htgotts.Speech{Folder: "audio", Language: voices.English, Handler: &ha
 speech.Speak("Your sentence.")
 ```
 
+### Use with Proxy
+```go
+import (
+    htgotts "github.com/hegedustibor/htgo-tts"
+    handlers "github.com/hegedustibor/htgo-tts/handlers"
+    voices "github.com/hegedustibor/htgo-tts/voices"
+)
+
+speech := htgotts.Speech{Folder: "audio", Language: voices.English, Proxy: "https://..."}
+speech.Speak("Your sentence.")
+```
+
 Have Fun!
