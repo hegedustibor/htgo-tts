@@ -72,4 +72,13 @@ speech := htgotts.Speech{Folder: "audio", Language: voices.English, Proxy: "http
 speech.Speak("Your sentence.")
 ```
 
+### Support and Contributions
+
+If you encounter issues using HTGO-TTS or would like to suggest improvements to the source code, you can create an issue on the ["Issues"](https://github.com/hegedustibor/htgo-tts/issues) tab. If you'd like to contribute to the HTGO-TTS source code, please submit a pull request.
+
+### License
+
+HTGO-TTS is free software and is available under the MIT license. For more information, please see the LICENSE file in the source code repository.
+
+
 Have Fun!
