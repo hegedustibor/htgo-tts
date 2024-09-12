@@ -1,6 +1,7 @@
 package htgotts
 
 import (
+	"bytes"
 	"crypto/md5"
 	"crypto/tls"
 	"encoding/hex"
@@ -44,6 +45,58 @@ func (speech *Speech) CreateSpeechFile(text string, fileName string) (string, er
 	}
 
 	return f, nil
+}
+
+// Creates a speech message with a given name
+func (speech *Speech) CreateSpeechBuff(text string, fileName string) (io.Reader, error) {
+	data := []rune(text)
+
+	chunkSize := len(data)
+	if len(data) > 32 {
+		chunkSize = 32
+	}
+
+	urls := make([]string, 0)
+	for prev, i := 0, 0; i < len(data); i++ {
+		if i%chunkSize == 0 && i != 0 {
+			chunk := string(data[prev:i])
+			url := fmt.Sprintf("http://translate.google.com/translate_tts?ie=UTF-8&total=1&idx=0&textlen=%d&client=tw-ob&q=%s&tl=%s", chunkSize, url.QueryEscape(chunk), speech.Language)
+			urls = append(urls, url)
+			prev = i
+		} else if i == len(data)-1 {
+			chunk := string(data[prev:])
+			url := fmt.Sprintf("http://translate.google.com/translate_tts?ie=UTF-8&total=1&idx=0&textlen=%d&client=tw-ob&q=%s&tl=%s", chunkSize, url.QueryEscape(chunk), speech.Language)
+			urls = append(urls, url)
+			prev = i
+		}
+	}
+
+	buf := new(bytes.Buffer)
+	for _, url := range urls {
+		r, err := http.Get(url)
+		if err != nil {
+			return nil, err
+		}
+
+		_, err = buf.ReadFrom(r.Body)
+		if err != nil {
+			return nil, err
+		}
+		r.Body.Close()
+	}
+
+	f := speech.Folder + "/" + fileName + ".mp3"
+	output, err := os.Create(f)
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = io.Copy(output, buf)
+	if err != nil {
+		return nil, err
+	}
+
+	return buf, nil
 }
 
 // Plays an existent .mp3 file
@@ -91,7 +144,7 @@ func (speech *Speech) downloadIfNotExists(fileName string, text string) error {
 	if err != nil {
 		dlURL := fmt.Sprintf("http://translate.google.com/translate_tts?ie=UTF-8&total=1&idx=0&textlen=32&client=tw-ob&q=%s&tl=%s", url.QueryEscape(text), speech.Language)
 
-		response, err := speech.urlResponse(dlURL, f)
+		response, err := speech.urlResponse(dlURL)
 
 		if err != nil {
 			return err
@@ -116,7 +169,7 @@ func (speech *Speech) generateHashName(name string) string {
 	return fmt.Sprintf("%s_%s", speech.Language, hex.EncodeToString(hash[:]))
 }
 
-func (speech *Speech) urlResponse(dlUrl string, f *os.File) (resp *http.Response, err error) {
+func (speech *Speech) urlResponse(dlUrl string) (resp *http.Response, err error) {
 	var (
 		response *http.Response
 	)
