@@ -47,7 +47,7 @@ speech.Speak("Your sentence.")
 
 ### Use tts without external player
 
-Note: The "Native" handler works around the Oto librery, see the ["Prerequisite"](https://github.com/hajimehoshi/oto/blob/main/README.md#prerequisite) section to work with this handler 
+Note: The "Native" handler works around the Oto library, see the ["Prerequisite"](https://github.com/hajimehoshi/oto/blob/main/README.md#prerequisite) section to work with this handler 
 
 ```go
 import (

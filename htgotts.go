@@ -31,7 +31,7 @@ type Speech struct {
 	Handler  handlers.PlayerInterface
 }
 
-// Creates a speech file with a given name
+// CreateSpeechFile creates a speech file with a given name.
 func (speech *Speech) CreateSpeechFile(text string, fileName string) (string, error) {
 	var err error
 
@@ -47,7 +47,7 @@ func (speech *Speech) CreateSpeechFile(text string, fileName string) (string, er
 	return f, nil
 }
 
-// Creates a speech message with a given name
+// CreateSpeechBuff creates a speech message with a given name.
 func (speech *Speech) CreateSpeechBuff(text string, fileName string) (io.Reader, error) {
 	data := []rune(text)
 
@@ -99,7 +99,7 @@ func (speech *Speech) CreateSpeechBuff(text string, fileName string) (io.Reader,
 	return buf, nil
 }
 
-// Plays an existent .mp3 file
+// PlaySpeechFile plays an existent .mp3 file.
 func (speech *Speech) PlaySpeechFile(fileName string) error {
 	if speech.Handler == nil {
 		mplayer := handlers.MPlayer{}
@@ -109,7 +109,7 @@ func (speech *Speech) PlaySpeechFile(fileName string) error {
 	return speech.Handler.Play(fileName)
 }
 
-// Speak downloads speech and plays it using mplayer
+// Speak downloads speech and plays it using mplayer.
 func (speech *Speech) Speak(text string) error {
 
 	var err error
@@ -123,9 +123,7 @@ func (speech *Speech) Speak(text string) error {
 	return speech.PlaySpeechFile(fileName)
 }
 
-/**
- * Create the folder if does not exists.
- */
+// createFolderIfNotExists creates the folder if it does not exist.
 func (speech *Speech) createFolderIfNotExists(folder string) error {
 	dir, err := os.Open(folder)
 	if os.IsNotExist(err) {
@@ -136,9 +134,7 @@ func (speech *Speech) createFolderIfNotExists(folder string) error {
 	return nil
 }
 
-/**
- * Download the voice file if does not exists.
- */
+// downloadIfNotExists downloads the voice if it does not exist.
 func (speech *Speech) downloadIfNotExists(fileName string, text string) error {
 	f, err := os.Open(fileName)
 	if err != nil {
