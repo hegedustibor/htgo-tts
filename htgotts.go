@@ -11,7 +11,7 @@ import (
 	"net/url"
 	"os"
 
-	"github.com/hegedustibor/htgo-tts/handlers"
+	"github.com/hegedustibor/htgo-tts/v2/handlers"
 )
 
 /**
