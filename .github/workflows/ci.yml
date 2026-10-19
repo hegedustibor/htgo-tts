@@ -23,7 +23,7 @@ jobs:
         with:
           go-version: 1.22.x
 
-      # handlers/Native.go imports oto, which compiles against ALSA through cgo on Linux.
+      # handlers/Native.go and player/native use oto, which drives ALSA through cgo on Linux.
       - name: Install ALSA headers
         if: runner.os == 'Linux'
         run: |
@@ -47,6 +47,13 @@ jobs:
 
       - name: Build
         run: go build ./...
+
+      # The player package must stay free of cgo; only player/native may need it.
+      # The root package joins this check once it no longer imports handlers.
+      - name: Build without cgo
+        env:
+          CGO_ENABLED: "0"
+        run: go build ./player
 
       - name: Test
         run: go test -race ./...
