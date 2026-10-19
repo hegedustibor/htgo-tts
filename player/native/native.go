@@ -3,9 +3,11 @@
 //
 // It has requirements that the player package does not:
 //
-//   - On Linux and the BSDs oto drives ALSA through cgo, so building needs a
-//     C compiler and the ALSA development headers (the libasound2-dev package
-//     on Debian and Ubuntu). macOS and Windows build without cgo.
+//   - Building needs no cgo on any platform: oto loads the sound library at
+//     run time through purego. On Linux that library is ALSA, so the machine
+//     that runs the program needs the libasound shared library (the
+//     libasound2 package on Debian and Ubuntu; the -dev headers are not
+//     needed). macOS and Windows need nothing extra.
 //   - Only MP3 is played; other formats fail with [ErrUnsupportedFormat].
 //     The Google Translate and OpenAI engines produce MP3.
 //   - The sound card is opened once per process, at the sample rate of the
@@ -76,13 +78,13 @@ func (p *Player) Play(ctx context.Context, audio io.Reader) error {
 		select {
 		case <-ctx.Done():
 			player.Pause()
-			_ = player.Close()
 			return fmt.Errorf("htgotts: native player: %w", ctx.Err())
 		case <-ticker.C:
 		}
 	}
-	// Close also reports an error that stopped the decoding mid-way.
-	if err := player.Close(); err != nil {
+	// Err reports an error that stopped the decoding mid-way. Since oto 3.4
+	// a player needs no Close; it is released with the garbage collector.
+	if err := player.Err(); err != nil {
 		return fmt.Errorf("htgotts: native player: %w", err)
 	}
 	return nil
