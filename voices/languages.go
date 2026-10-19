@@ -14,7 +14,7 @@ const (
 	Spanish    = "es"
 	Russian    = "ru"
 	Arabic     = "ar"
-	bengali    = "bn"
+	Bengali    = "bn"
 	Czech      = "cs"
 	Danish     = "da"
 	Dutch      = "nl"
