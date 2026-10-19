@@ -21,9 +21,10 @@ jobs:
 
       - uses: actions/setup-go@v5
         with:
-          go-version: 1.22.x
+          go-version: 1.25.x
 
-      # handlers/Native.go and player/native use oto, which drives ALSA through cgo on Linux.
+      # handlers/Native.go still uses oto v2, which drives ALSA through cgo on Linux.
+      # Drop this step once the root package no longer imports handlers.
       - name: Install ALSA headers
         if: runner.os == 'Linux'
         run: |
@@ -36,7 +37,7 @@ jobs:
       - name: Vet
         run: go vet ./...
 
-      # The latest staticcheck needs a newer Go than this module targets; with
+      # staticcheck@latest may need a newer Go than this module targets; with
       # GOTOOLCHAIN=auto the go command fetches that toolchain for the install only.
       - name: Staticcheck
         env:
@@ -48,12 +49,13 @@ jobs:
       - name: Build
         run: go build ./...
 
-      # The player package must stay free of cgo; only player/native may need it.
+      # The player packages, the native player included, must stay free of cgo:
+      # oto 3.5 loads ALSA and CoreAudio at run time through purego.
       # The root package joins this check once it no longer imports handlers.
       - name: Build without cgo
         env:
           CGO_ENABLED: "0"
-        run: go build ./player
+        run: go build ./player/...
 
       - name: Test
         run: go test -race ./...
