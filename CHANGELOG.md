@@ -4,6 +4,13 @@ All notable changes to this project are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- `engine/azure`: an engine for the Azure Speech text to speech REST endpoint, with a choice of voice, language, speaking style, rate, pitch and output format. The resource key and the region come from `WithKey` and `WithRegion` or from `AZURE_SPEECH_KEY` and `AZURE_SPEECH_REGION`, and `WithEndpoint` reaches custom voices and sovereign clouds. It needs no SDK and no cgo (#21).
+- `examples/azure`, a program that speaks or saves a sentence through the Azure Speech engine.
+
 ## [2.0.0] - 2026-10-20
 
 A rewrite with the new import path `github.com/hegedustibor/htgo-tts/v2`. The v1 API stays available as `github.com/hegedustibor/htgo-tts@v1.6.0` and from the `v1` branch; [MIGRATION.md](MIGRATION.md) maps it to v2.
@@ -58,5 +65,6 @@ A rewrite with the new import path `github.com/hegedustibor/htgo-tts/v2`. The v1
 
 The last release of the v1 API, which added chunked `CreateSpeechBuff` output for longer text (#32). v1 stays available from this release, tagged `v1.6.0` for `go get` because the `v1.6` tag is not a semantic version that Go resolves, and from the `v1` branch, which is for critical fixes only.
 
+[Unreleased]: https://github.com/hegedustibor/htgo-tts/compare/v2.0.0...HEAD
 [2.0.0]: https://github.com/hegedustibor/htgo-tts/compare/v1.6...v2.0.0
 [1.6]: https://github.com/hegedustibor/htgo-tts/compare/v1.5...v1.6

@@ -48,20 +48,32 @@ func defaultTransport() *http.Transport {
 	}
 }
 
-// CheckResponse returns nil when resp has status 200 OK and, unless
-// wantContentTypePrefix is empty, a Content-Type that starts with that prefix,
-// compared case-insensitively. Otherwise it reads the beginning of the body
-// and returns an *engine.HTTPError that describes the answer. The body is
-// left untouched when the response is accepted.
-func CheckResponse(resp *http.Response, wantContentTypePrefix string) error {
+// CheckResponse returns nil when resp has status 200 OK and a Content-Type
+// that starts with one of the given prefixes, compared case-insensitively; no
+// prefix, or an empty one, accepts every Content-Type. Otherwise it reads the
+// beginning of the body and returns an *engine.HTTPError that describes the
+// answer. The body is left untouched when the response is accepted.
+func CheckResponse(resp *http.Response, wantContentTypePrefixes ...string) error {
 	if resp.StatusCode != http.StatusOK {
 		return newHTTPError(resp, "")
 	}
 	contentType := resp.Header.Get("Content-Type")
-	if wantContentTypePrefix != "" && !strings.HasPrefix(strings.ToLower(contentType), strings.ToLower(wantContentTypePrefix)) {
-		return newHTTPError(resp, fmt.Sprintf("unexpected content type %q: ", contentType))
+	if len(wantContentTypePrefixes) == 0 || hasAnyPrefix(contentType, wantContentTypePrefixes) {
+		return nil
 	}
-	return nil
+	return newHTTPError(resp, fmt.Sprintf("unexpected content type %q: ", contentType))
+}
+
+// hasAnyPrefix reports whether s starts with one of the prefixes, ignoring
+// case; an empty prefix matches everything.
+func hasAnyPrefix(s string, prefixes []string) bool {
+	s = strings.ToLower(s)
+	for _, prefix := range prefixes {
+		if strings.HasPrefix(s, strings.ToLower(prefix)) {
+			return true
+		}
+	}
+	return false
 }
 
 func newHTTPError(resp *http.Response, messagePrefix string) *engine.HTTPError {
