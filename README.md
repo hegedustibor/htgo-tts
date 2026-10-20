@@ -5,7 +5,7 @@
 [![Go Reference](https://pkg.go.dev/badge/github.com/hegedustibor/htgo-tts/v2.svg)](https://pkg.go.dev/github.com/hegedustibor/htgo-tts/v2)
 [![CI](https://github.com/hegedustibor/htgo-tts/actions/workflows/ci.yml/badge.svg)](https://github.com/hegedustibor/htgo-tts/actions/workflows/ci.yml)
 
-htgo-tts turns text into speech from Go. It asks a text-to-speech engine for the audio of a text and plays it, saves it to a file, or hands it to you as a stream or as bytes in memory. The engine is yours to choose: the unofficial Google Translate endpoint, free and without an API key; the OpenAI speech API with its models and voices; or an engine of your own, written with three methods.
+htgo-tts turns text into speech from Go. It asks a text-to-speech engine for the audio of a text and plays it, saves it to a file, or hands it to you as a stream or as bytes in memory. The engine is yours to choose: the unofficial Google Translate endpoint, free and without an API key; the paid speech services of OpenAI, Azure, Google Cloud and ElevenLabs, with their models and voices; a speech program installed on the machine, such as the `say` command of macOS, espeak-ng or piper, which works offline; or an engine of your own, written with three methods.
 
 This is version 2, a rewrite with a new import path. Coming from v1? [MIGRATION.md](MIGRATION.md) maps the old API to the new one; v1 itself stays available as `github.com/hegedustibor/htgo-tts@v1.6.0` and from the `v1` branch.
 
@@ -38,7 +38,7 @@ This is version 2, a rewrite with a new import path. Coming from v1? [MIGRATION.
 
 A `Speech` ties an engine to a player.
 
-- The **engine** turns text into a stream of audio. The module ships two. `engine/google` speaks through the unofficial Google Translate endpoint: free, without an API key, one language per engine, as v1 did. `engine/openai` speaks through the OpenAI speech API, or any OpenAI-compatible endpoint, with a choice of model, voice, speed and format; it needs an API key, and every request is billed. Any type with the three methods of `engine.Engine` works in their place.
+- The **engine** turns text into a stream of audio. The module ships six. `engine/google` speaks through the unofficial Google Translate endpoint: free, without an API key, one language per engine, as v1 did. `engine/openai`, `engine/azure`, `engine/googlecloud` and `engine/elevenlabs` speak through the OpenAI speech API or any OpenAI-compatible endpoint, Azure Speech, Google Cloud Text-to-Speech and ElevenLabs, each with voices, formats and settings of its own; they need an API key, and the audio is paid for, beyond a free monthly allowance at Azure, Google Cloud and ElevenLabs. `engine/command` runs a speech program installed on the machine, such as the `say` command of macOS, espeak-ng or piper, and works offline. Any type with the three methods of `engine.Engine` works in their place.
 - The **player** plays the audio. By default it is mplayer, run as an external program that reads the audio from its standard input. ffplay, any other such command, or the native player, which decodes MP3 in-process and plays it through the sound card without an external program, can take its place.
 - The **cache** is optional. Without a folder nothing is written to disk: the audio streams from the engine to the player, or to you. With one, the audio of every text is kept as a file and served from it the next time.
 
@@ -49,7 +49,8 @@ Every network and playback call takes a `context.Context`: a deadline or a cance
 - Go 1.25 or newer.
 - Network access for the engines that call a web service; the command engine runs a speech program on the machine and works offline.
 - For the default player, mplayer in `PATH`; ffplay works the same way. The native player needs no external program and no cgo; on Linux, the machine that runs the program needs the ALSA shared library (package `libasound2`, or `libasound2t64` on Debian 13 and Ubuntu 24.04 and later). A program that only saves or synthesizes speech needs no player at all.
-- For the OpenAI engine, an API key; every request is billed.
+- For the OpenAI, Azure Speech, Google Cloud and ElevenLabs engines, an API key; these services charge for the audio, Azure, Google Cloud and ElevenLabs beyond a free monthly allowance.
+- For the command engine, the speech program in `PATH`: `say` on macOS, espeak-ng, piper or another one.
 
 ## Installation
 
@@ -110,7 +111,7 @@ e := google.New(
 
 The engine sends its requests with an HTTP client of its own. `google.WithHTTPClient(client)` replaces it, for example to turn TLS verification off for a proxy that inspects the traffic, or to record the requests in a test; `WithHTTPClient` and `WithProxy` exclude each other, so give such a client its proxy through its transport. An invalid option, such as a malformed proxy URL or an empty language, does not make `New` fail: the engine remembers the error, and the first `Speak`, `Open`, `Synthesize` or `Save` returns it.
 
-The endpoint is undocumented and unofficial. Google may change it or rate-limit it without notice; the OpenAI engine, or an engine of your own, is the way out when that happens.
+The endpoint is undocumented and unofficial. Google may change it or rate-limit it without notice; another engine of the module, or an engine of your own, is the way out when that happens.
 
 ### OpenAI
 
@@ -298,7 +299,7 @@ tts, err := htgotts.New(e, htgotts.WithPlayer(player.FFplay()))
 |---|---|
 | `player.MPlayer()` | The default. Runs `mplayer -really-quiet -cache 8092 -`, the audio on its standard input; mplayer plays every format the engines produce. |
 | `player.FFplay()` | Runs `ffplay -nodisp -autoexit -loglevel error -`, part of FFmpeg. Not yet checked against a running ffplay: if yours does not play, replace the final argument with `pipe:0`. |
-| `native.New()` | From `player/native`: decodes MP3 with go-mp3 and plays it through the sound card with oto, in-process, without an external program and without cgo. MP3 only; the sound card is opened once per process, at the sample rate of the first MP3, and both engines produce 24 kHz MP3. On Linux, the ALSA shared library must be installed. |
+| `native.New()` | From `player/native`: decodes MP3 with go-mp3 and plays it through the sound card with oto, in-process, without an external program and without cgo. MP3 only, so the WAV of the command engines needs another player; the sound card is opened once per process, at the sample rate of the first MP3. The Google Translate and OpenAI engines produce 24 kHz MP3, Azure and Google Cloud do so by default, and ElevenLabs produces 44.1 kHz MP3 unless `elevenlabs.WithOutputFormat` asks for 24 kHz: one process plays either ElevenLabs or the others through it. On Linux, the ALSA shared library must be installed. |
 | `&player.Command{Name: "play", Args: []string{"-q", "-t", "mp3", "-"}}` | Any program that plays audio from its standard input, here SoX. The program's last standard error output is part of the error when it exits with a non-zero status. |
 | `player.Discard` | Reads the audio without playing it: for tests, and for programs that only download or cache speech. |
 
@@ -412,10 +413,10 @@ The Google Translate engine takes one of the `voices` constants, a typed `voices
 
 ## Limitations
 
-- The Google Translate endpoint is unofficial and undocumented: it may change, break or rate-limit without notice, and nothing in this module can prevent that. It offers no choice of voice, only the language and the slow mode; voices are an OpenAI feature.
-- Text is spoken in pieces: the Google engine fetches about a hundred characters per request, the OpenAI engine 4096. The audio of the pieces is simply concatenated, which mplayer, ffplay and the native player play through, with a short pause audible at a boundary now and then. The Google engine produces 24 kHz MP3 only, and the OpenAI engine's container formats should be kept within one request.
+- The Google Translate endpoint is unofficial and undocumented: it may change, break or rate-limit without notice, and nothing in this module can prevent that. It offers no choice of voice, only the language and the slow mode; voices are a feature of the other engines.
+- Text is spoken in pieces: the Google engine fetches about a hundred characters per request, the OpenAI engine 4096, ElevenLabs 2500, Google Cloud 5000 bytes and Azure ten minutes of audio; the command engines hand the whole text to the program. The audio of the pieces is simply concatenated, which mplayer, ffplay and the native player play through, with a short pause audible at a boundary now and then. That is sound for MP3 and PCM, while every piece of a container format (WAV, Opus, AAC, FLAC) carries a header of its own, so such formats should be kept within one request. The Google engine produces 24 kHz MP3 only.
 - The native player plays MP3 only, at one sample rate per process, and needs the ALSA shared library on Linux at run time.
-- Every engine of the module except `engine/command` needs network access, and the OpenAI engine costs money per request.
+- Every engine of the module except `engine/command` needs network access, and every one except Google Translate and `engine/command` costs money, beyond the free monthly allowance of Azure, Google Cloud and ElevenLabs.
 - `player.FFplay()` has not been checked against a running ffplay.
 
 ## Docker
