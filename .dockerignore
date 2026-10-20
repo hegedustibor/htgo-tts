@@ -1,0 +1,7 @@
+# The build context of examples/docker/Dockerfile is the root of the
+# repository: leave out what the build does not need.
+.git
+.github
+.claude
+.idea
+**/audio

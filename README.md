@@ -420,22 +420,23 @@ The Google Translate engine takes one of the `voices` constants, a typed `voices
 
 ## Docker
 
-The whole module builds without cgo, so the build stage needs no C compiler and no ALSA headers. What the run stage needs depends on the player: mplayer for the default player, the ALSA shared library for the native player, nothing for a program that only saves or synthesizes speech. Playing sound from a container also needs the host's sound device, for example with `--device /dev/snd`.
+The whole module builds without cgo, so the build stage needs no C compiler and no ALSA headers, and the binaries are static. What the run stage needs depends on the player: mplayer for the default player, the ALSA shared library for the native player, nothing for a program that only saves or synthesizes speech; every engine that calls a web service also needs the CA certificates, which the slim base images leave out. Playing sound from a container also needs the host's sound device, for example with `--device /dev/snd`.
 
-```dockerfile
-FROM golang:1.25 AS build
-WORKDIR /src
-COPY . .
-RUN CGO_ENABLED=0 go build -o /app ./cmd/myapp
+[examples/docker/Dockerfile](examples/docker/Dockerfile) is a two-stage image that does all this for the `save` and `speak` programs of the examples, to copy for a program of your own. The build stage downloads the dependencies in a layer of their own and compiles the programs with `CGO_ENABLED=0`. The run stage, `debian:bookworm-slim`, installs the CA certificates and what the `PLAYER` build argument asks for: `none`, the default, for a program that only saves; `mplayer` for the default player; `native` for the ALSA library of the native player. It runs the programs as an unprivileged user that keeps the audio in the `/audio` volume. Build it from the root of the repository, which is the build context, and it saves the speech of its arguments into the mounted folder, here as `audio/hello.mp3`:
 
-FROM debian:bookworm-slim
-# mplayer for the default player. For the native player install libasound2
-# instead (libasound2t64 on Debian 13 and Ubuntu 24.04 and later); a program
-# that only saves or synthesizes speech needs neither.
-RUN apt-get update && apt-get install -y --no-install-recommends mplayer && rm -rf /var/lib/apt/lists/*
-COPY --from=build /app /app
-ENTRYPOINT ["/app"]
+```bash
+docker build -f examples/docker/Dockerfile -t htgo-tts-example .
+docker run --rm -v "$PWD/audio:/audio" htgo-tts-example -lang hu "Szia, világ!"
 ```
+
+Built with `--build-arg PLAYER=mplayer`, the image plays through the host's sound device instead:
+
+```bash
+docker build -f examples/docker/Dockerfile --build-arg PLAYER=mplayer -t htgo-tts-example .
+docker run --rm --device /dev/snd --entrypoint speak htgo-tts-example -lang hu "Szia, világ!"
+```
+
+[examples/docker/README.md](examples/docker/README.md) has the details, and CI builds the image with every `PLAYER` value.
 
 ## Examples
 
@@ -457,6 +458,7 @@ go run ./examples/speak -lang hu "Szia, világ!"
 | [googlecloud](examples/googlecloud/main.go) | the Google Cloud Text-to-Speech engine with voice, rate and pitch flags: an MP3 played, or a WAV saved |
 | [elevenlabs](examples/elevenlabs/main.go) | the ElevenLabs engine with voice, model, language and speed flags: an MP3 played, or saved |
 | [command](examples/command/main.go) | a speech program on this machine, offline: say on macOS, espeak-ng, piper or any command with `{text}` and `{out}`; a WAV played with mplayer, or saved |
+| [docker](examples/docker/Dockerfile) | a two-stage Dockerfile for save and speak: a static build without cgo, a run stage with the player chosen by a build argument, and the audio in a volume |
 
 ## Migrating from v1
 
