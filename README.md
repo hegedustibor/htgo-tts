@@ -7,7 +7,7 @@
 
 htgo-tts turns text into speech from Go. It asks a text-to-speech engine for the audio of a text and plays it, saves it to a file, or hands it to you as a stream or as bytes in memory. The engine is yours to choose: the unofficial Google Translate endpoint, free and without an API key; the OpenAI speech API with its models and voices; or an engine of your own, written with three methods.
 
-This is version 2, a rewrite with a new import path. Coming from v1? [MIGRATION.md](MIGRATION.md) maps the old API to the new one; v1 itself stays available from the `v1.6` tag and the `v1` branch.
+This is version 2, a rewrite with a new import path. Coming from v1? [MIGRATION.md](MIGRATION.md) maps the old API to the new one; v1 itself stays available as `github.com/hegedustibor/htgo-tts@v1.6.0` and from the `v1` branch.
 
 ## Contents
 
