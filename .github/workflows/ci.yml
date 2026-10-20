@@ -50,3 +50,27 @@ jobs:
 
       - name: Test
         run: go test -race ./...
+
+  # The example image of examples/docker must build with every PLAYER and
+  # its programs must start. The runner has no sound device and the engines
+  # need the network, so --help is the run that proves it.
+  docker:
+    name: docker
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build the example image
+        run: docker build -f examples/docker/Dockerfile -t htgo-tts-example .
+
+      - name: Run save
+        run: docker run --rm htgo-tts-example --help
+
+      - name: Build the example image with mplayer
+        run: docker build -f examples/docker/Dockerfile --build-arg PLAYER=mplayer -t htgo-tts-example:mplayer .
+
+      - name: Run speak
+        run: docker run --rm --entrypoint speak htgo-tts-example:mplayer --help
+
+      - name: Build the example image with the ALSA library
+        run: docker build -f examples/docker/Dockerfile --build-arg PLAYER=native -t htgo-tts-example:native .
