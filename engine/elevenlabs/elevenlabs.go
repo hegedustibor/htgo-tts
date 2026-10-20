@@ -19,11 +19,11 @@
 // previous_text and next_text, so that the service keeps the speech continuous
 // across the cut.
 //
-// The MP3 output is sampled at 44.1 kHz, not at the 24 kHz of the other
+// The MP3 output is sampled at 44.1 kHz, not at the 24 kHz of the other web
 // engines of this module. The native player opens the sound card at the sample
 // rate of the first MP3 it plays, so one process cannot play this engine and
-// the others through it, unless WithOutputFormat asks for mp3_24000_48. The PCM
-// and Opus formats need a command-line player such as mplayer or ffplay.
+// those through it, unless WithOutputFormat asks for mp3_24000_48. The PCM and
+// Opus formats need a command-line player such as mplayer or ffplay.
 package elevenlabs
 
 import (
