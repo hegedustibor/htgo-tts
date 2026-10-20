@@ -10,6 +10,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - `examples/docker`: a two-stage Dockerfile to copy for a program of your own. The build stage compiles the `save` and `speak` programs without cgo; the run stage is `debian:bookworm-slim` with the CA certificates for the engines and the player that the `PLAYER` build argument asks for (`none`, `mplayer`, or `native` for the ALSA library), and it runs the programs as an unprivileged user with their audio in the `/audio` volume. Its README has the commands for saving and for playing with the host's sound device, a root `.dockerignore` keeps `.git` and the `audio` folders out of the build context, and CI builds the image with every `PLAYER` value and starts the programs. The Docker section of the README points to this file instead of a snippet that built a program the repository does not have (#33, #27).
 
+### Changed
+
+- README: the overview, the requirements, the native player's row of the player table and the limitations describe all six engines instead of the two of 2.0.0: which ones need an API key and charge for the audio, which produce the 24 kHz MP3 that the native player expects and that ElevenLabs does not by default, and how much text each one speaks per request.
+
 ## [2.1.0] - 2026-10-20
 
 Four more engines, each a few lines of configuration away from the existing ones; nothing in the 2.0.0 API changes.
