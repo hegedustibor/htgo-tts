@@ -4,8 +4,8 @@
 //
 // An engine turns text into a stream of audio. The module ships engines in
 // its subpackages, such as engine/google for the Google Translate endpoint;
-// any type that implements Engine, for example one that calls Azure Speech or
-// ElevenLabs, can be used in their place.
+// any type that implements Engine, for example one that calls a speech
+// server of your own, can be used in their place.
 package engine
 
 import (

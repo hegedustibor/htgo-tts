@@ -9,11 +9,15 @@
 //     libasound2 package on Debian and Ubuntu; the -dev headers are not
 //     needed). macOS and Windows need nothing extra.
 //   - Only MP3 is played; other formats fail with [ErrUnsupportedFormat].
-//     The Google Translate and OpenAI engines produce MP3.
+//     The web engines of the module produce MP3 by default; the command
+//     engines produce WAV, which needs another player.
 //   - The sound card is opened once per process, at the sample rate of the
 //     first MP3 played, because oto supports a single context per process.
-//     A later MP3 with another sample rate fails with [ErrSampleRate]. Google
-//     Translate and OpenAI both produce 24 kHz MP3, so mixing them is fine.
+//     A later MP3 with another sample rate fails with [ErrSampleRate]. The
+//     Google Translate and OpenAI engines produce 24 kHz MP3, Azure and
+//     Google Cloud do so by default, and ElevenLabs produces 44.1 kHz MP3
+//     unless its WithOutputFormat asks for 24 kHz: one process plays either
+//     ElevenLabs or the others.
 //
 // Playing many MP3s in a row in one process works; every Play reuses the open
 // sound card.
