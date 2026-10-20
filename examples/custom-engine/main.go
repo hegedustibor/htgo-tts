@@ -1,16 +1,16 @@
 // Command custom-engine shows how to write an engine of your own: a type
 // with the three methods of engine.Engine, which htgotts.New accepts in place
-// of the Google Translate and OpenAI engines. This one fetches the speech
-// from an HTTP server that takes the text in a query parameter and answers
-// with the audio, as the /api/tts endpoint of a Coqui TTS server or the root
-// path of Piper's HTTP server does:
+// of the engines of the module. This one fetches the speech from an HTTP
+// server that takes the text in a query parameter and answers with the
+// audio, as the /api/tts endpoint of a Coqui TTS server or the root path of
+// Piper's HTTP server does:
 //
 //	go run ./examples/custom-engine -url http://localhost:5002/api/tts -format wav "Hello, world!"
 //
 // The speech is played with mplayer, which plays WAV as well as MP3; the
 // native player would need a server that answers with MP3. Adapt the request
-// in Synthesize to the service you use, for example Azure Speech or
-// ElevenLabs; the shape of the engine stays the same.
+// in Synthesize to the service you use; the shape of the engine stays the
+// same.
 package main
 
 import (

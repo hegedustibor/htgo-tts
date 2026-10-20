@@ -5,18 +5,24 @@
 // # Engines
 //
 // The engine does the synthesis and is the first argument of [New]. The
-// module ships two, in subpackages:
+// module ships six, in subpackages:
 //
 //   - engine/google speaks through the unofficial Google Translate endpoint:
 //     free, without an API key, one language per engine, as htgotts v1 did.
 //   - engine/openai speaks through the OpenAI speech API, or any
 //     OpenAI-compatible endpoint, with a choice of model, voice, speed and
 //     format; it needs an API key, and every request is billed.
+//   - engine/azure speaks through Azure Speech, engine/googlecloud through
+//     Google Cloud Text-to-Speech and engine/elevenlabs through ElevenLabs,
+//     each with voices, formats and settings of its own; they need an API
+//     key, and the audio is paid for beyond a free monthly allowance.
+//   - engine/command runs a speech program installed on the machine, such
+//     as the say command of macOS, espeak-ng or piper, and works offline.
 //
 // Any type that implements [engine.Engine], an interface of three methods,
 // works in their place, so a program switches engines by changing the one
-// line that creates its engine. Every engine of the module needs network
-// access.
+// line that creates its engine. Every engine of the module except
+// engine/command needs network access.
 //
 // # Players
 //

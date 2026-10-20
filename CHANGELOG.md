@@ -12,7 +12,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Changed
 
-- README: the overview, the requirements, the native player's row of the player table and the limitations describe all six engines instead of the two of 2.0.0: which ones need an API key and charge for the audio, which produce the 24 kHz MP3 that the native player expects and that ElevenLabs does not by default, and how much text each one speaks per request.
+- README and the doc comments of `htgotts`, `player/native` and the `native` and `custom-engine` examples: the overview, the requirements, the native player's row of the player table, the limitations and the package documentation describe all six engines instead of the two of 2.0.0: which ones need an API key and charge for the audio, which one works offline, which produce the 24 kHz MP3 that the native player expects and that ElevenLabs does not by default, and how much text each one speaks per request.
 
 ## [2.1.0] - 2026-10-20
 
