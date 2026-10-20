@@ -10,6 +10,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - `engine/azure`: an engine for the Azure Speech text to speech REST endpoint, with a choice of voice, language, speaking style, rate, pitch and output format. The resource key and the region come from `WithKey` and `WithRegion` or from `AZURE_SPEECH_KEY` and `AZURE_SPEECH_REGION`, and `WithEndpoint` reaches custom voices and sovereign clouds. It needs no SDK and no cgo (#21).
 - `examples/azure`, a program that speaks or saves a sentence through the Azure Speech engine.
+- `engine/googlecloud`: an engine for the Google Cloud Text-to-Speech REST endpoint, the official, paid counterpart of the Translate endpoint, with a choice of voice, language, gender, speaking rate, pitch, volume, sample rate and output format. The API key comes from `WithKey` or from `GOOGLE_CLOUD_API_KEY` and travels in a header, never in the URL, and `WithEndpoint` reaches the regional endpoints. It needs no SDK and no cgo.
+- `examples/googlecloud`, a program that speaks or saves a sentence through the Google Cloud Text-to-Speech engine.
 - `engine/command`: an engine that runs a speech program installed on the machine, such as the `say` command of macOS, espeak-ng or piper, with the text on its standard input or in an argument and the audio from its standard output or from a file it writes. `Say`, `ESpeakNG` and `Piper` are ready-made, `New` takes any other program, and `WithDir`, `WithEnv` and `WithTimeout` set the working directory, the environment and a time limit. It needs no API key and no network, so speech works offline (#14).
 - `examples/command`, a program that speaks or saves a sentence through a speech program on the machine.
 

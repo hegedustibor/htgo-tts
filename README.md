@@ -19,6 +19,7 @@ This is version 2, a rewrite with a new import path. Coming from v1? [MIGRATION.
   - [Google Translate](#google-translate)
   - [OpenAI](#openai)
   - [Azure Speech](#azure-speech)
+  - [Google Cloud Text-to-Speech](#google-cloud-text-to-speech)
   - [A program on this machine](#a-program-on-this-machine)
   - [An engine of your own](#an-engine-of-your-own)
 - [Players](#players)
@@ -166,6 +167,23 @@ e := azure.New(
 ```
 
 `azure.WithLanguage` sets the language of the SSML document when the voice's name does not carry it, as the name of a custom voice does not, or when a multilingual voice should read another language. `azure.WithOutputFormat("audio-48khz-192kbitrate-mono-mp3", engine.FormatMP3)` requests any other format of the service by its name; the native player plays 24 kHz MP3 only. The service cuts the audio of one request at ten minutes, so longer text is split at sentence and clause boundaries and requested piece by piece, which is sound for MP3 and PCM, while WAV and Opus pieces each carry a header of their own.
+
+### Google Cloud Text-to-Speech
+
+`engine/googlecloud` posts JSON to the Google Cloud Text-to-Speech endpoint, `https://texttospeech.googleapis.com/v1/text:synthesize`: the official, paid counterpart of the Translate endpoint above, with a free monthly allowance, hundreds of voices in dozens of languages, among them the Standard, WaveNet, Neural2, Studio and Chirp 3: HD kinds, and a choice of speaking rate, pitch, volume, sample rate and format. The API key comes from `googlecloud.WithKey` or the `GOOGLE_CLOUD_API_KEY` environment variable; it only ever travels in the `x-goog-api-key` header, never in the URL, and never appears in an error or a file name.
+
+```go
+e := googlecloud.New(
+	googlecloud.WithKey(key),                             // or leave it out and set GOOGLE_CLOUD_API_KEY
+	googlecloud.WithVoice(googlecloud.VoiceHuHUWavenetB), // any voice of the service as googlecloud.Voice("name"); the language follows the voice
+	googlecloud.WithSpeakingRate(1.1),                    // 0.25–2; 1 is the voice's own pace
+	googlecloud.WithPitch(-2),                            // semitones, -20–20
+	googlecloud.WithFormat(engine.FormatMP3),             // mp3 (default), wav, opus or pcm
+	googlecloud.WithTimeout(30*time.Second),              // per request; 60 s by default
+)
+```
+
+Without `googlecloud.WithVoice` the service chooses a voice for the language of `googlecloud.WithLanguage`, en-US by default, preferring the gender of `googlecloud.WithGender`. The audio is sampled at 24 kHz, the rate the native player plays, unless `googlecloud.WithSampleRate` asks for another; `googlecloud.WithVolumeGain` raises or lowers the volume in decibels. The endpoint accepts 5000 bytes of text per request, so longer text is split at sentence and clause boundaries and requested piece by piece, which is sound for MP3 and PCM, while WAV and Opus pieces each carry a header of their own. The Chirp 3: HD voices take no speaking rate and no pitch.
 
 ### A program on this machine
 
@@ -413,6 +431,7 @@ go run ./examples/speak -lang hu "Szia, világ!"
 | [proxy](examples/proxy/main.go) | the Google engine through a proxy, with TLS verification on or off |
 | [custom-engine](examples/custom-engine/main.go) | an engine of your own that calls an HTTP speech server |
 | [azure](examples/azure/main.go) | the Azure Speech engine with voice, style, rate and pitch flags: an MP3 played, or a WAV saved |
+| [googlecloud](examples/googlecloud/main.go) | the Google Cloud Text-to-Speech engine with voice, rate and pitch flags: an MP3 played, or a WAV saved |
 | [command](examples/command/main.go) | a speech program on this machine, offline: say on macOS, espeak-ng, piper or any command with `{text}` and `{out}`; a WAV played with mplayer, or saved |
 
 ## Migrating from v1
