@@ -6,7 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [2.0.0] - 2026-10-20
 
-A rewrite with the new import path `github.com/hegedustibor/htgo-tts/v2`. The v1 API stays available from the `v1.6` tag and the `v1` branch; [MIGRATION.md](MIGRATION.md) maps it to v2.
+A rewrite with the new import path `github.com/hegedustibor/htgo-tts/v2`. The v1 API stays available as `github.com/hegedustibor/htgo-tts@v1.6.0` and from the `v1` branch; [MIGRATION.md](MIGRATION.md) maps it to v2.
 
 ### Added
 
@@ -56,7 +56,7 @@ A rewrite with the new import path `github.com/hegedustibor/htgo-tts/v2`. The v1
 
 ## [1.6] - 2024-09-12
 
-The last release of the v1 API, which added chunked `CreateSpeechBuff` output for longer text (#32). v1 stays available from this tag and from the `v1` branch, which is for critical fixes only.
+The last release of the v1 API, which added chunked `CreateSpeechBuff` output for longer text (#32). v1 stays available from this release, tagged `v1.6.0` for `go get` because the `v1.6` tag is not a semantic version that Go resolves, and from the `v1` branch, which is for critical fixes only.
 
 [2.0.0]: https://github.com/hegedustibor/htgo-tts/compare/v1.6...v2.0.0
 [1.6]: https://github.com/hegedustibor/htgo-tts/compare/v1.5...v1.6

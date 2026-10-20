@@ -2,7 +2,7 @@
 
 htgo-tts v2 is a rewrite with a new import path, `github.com/hegedustibor/htgo-tts/v2`, and a new API: you choose the engine that does the synthesis, players read the audio from a stream instead of a file, every call takes a `context.Context`, and nothing is written to disk unless you ask for a cache folder. This guide maps the v1 API to v2 and lists what behaves differently.
 
-v1 is not going away. The `v1.6` tag keeps serving `github.com/hegedustibor/htgo-tts` as it is, and the `v1` branch is where a critical fix for v1 would land; v1 gets no new features.
+v1 is not going away. `go get github.com/hegedustibor/htgo-tts@v1.6.0` keeps serving the v1 API as it is: the `v1.6.0` tag marks the same commit as the older `v1.6` tag, which Go cannot resolve because it is not a semantic version. The `v1` branch is where a critical fix for v1 would land; v1 gets no new features.
 
 ## Import path
 
