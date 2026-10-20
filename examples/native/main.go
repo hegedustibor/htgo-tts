@@ -8,8 +8,8 @@
 // The program builds without cgo. On Linux the machine that runs it needs the
 // ALSA shared library (package libasound2, or libasound2t64 on Debian 13 and
 // Ubuntu 24.04 and later); macOS and Windows need nothing extra. The native
-// player plays MP3 only, which is what the Google Translate and OpenAI
-// engines produce.
+// player plays MP3 only, which the Google Translate engine used here
+// produces, as the other web engines of the module do by default.
 package main
 
 import (
