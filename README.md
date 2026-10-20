@@ -18,6 +18,7 @@ This is version 2, a rewrite with a new import path. Coming from v1? [MIGRATION.
 - [Engines](#engines)
   - [Google Translate](#google-translate)
   - [OpenAI](#openai)
+  - [Azure Speech](#azure-speech)
   - [An engine of your own](#an-engine-of-your-own)
 - [Players](#players)
 - [Streams, cache and files](#streams-cache-and-files)
@@ -145,6 +146,25 @@ e := openai.New(
 	openai.WithAPIKey(entraToken),
 )
 ```
+
+### Azure Speech
+
+`engine/azure` posts SSML to the Azure Speech text to speech endpoint, `https://<region>.tts.speech.microsoft.com/cognitiveservices/v1`: a paid service with a free monthly allowance, hundreds of neural voices in over a hundred languages, speaking styles for many of them, and a choice of rate, pitch and format. The resource key comes from `azure.WithKey` or the `AZURE_SPEECH_KEY` environment variable, the region from `azure.WithRegion` or `AZURE_SPEECH_REGION`; the key only ever travels in the `Ocp-Apim-Subscription-Key` header and never appears in an error or a file name. This is the Speech service, not Azure OpenAI: the OpenAI voices hosted on Azure go through the OpenAI engine above.
+
+```go
+e := azure.New(
+	azure.WithKey(key),                    // or leave it out and set AZURE_SPEECH_KEY
+	azure.WithRegion("westeurope"),        // or AZURE_SPEECH_REGION; azure.WithEndpoint for a custom voice or a sovereign cloud
+	azure.WithVoice(azure.VoiceHuHUNoemi), // any voice of the service as azure.Voice("name"); the language follows the voice
+	azure.WithStyle("cheerful"),           // a style the voice has, from the voices/list endpoint; ignored otherwise
+	azure.WithRate("+10%"),                // "0.8", "-20%", "slow", "fast", ...
+	azure.WithPitch("-2st"),               // "+50Hz", "high", "-10%", ...
+	azure.WithFormat(engine.FormatMP3),    // mp3 (default), wav, opus or pcm, all at 24 kHz
+	azure.WithTimeout(30*time.Second),     // per request; 60 s by default
+)
+```
+
+`azure.WithLanguage` sets the language of the SSML document when the voice's name does not carry it, as the name of a custom voice does not, or when a multilingual voice should read another language. `azure.WithOutputFormat("audio-48khz-192kbitrate-mono-mp3", engine.FormatMP3)` requests any other format of the service by its name; the native player plays 24 kHz MP3 only. The service cuts the audio of one request at ten minutes, so longer text is split at sentence and clause boundaries and requested piece by piece, which is sound for MP3 and PCM, while WAV and Opus pieces each carry a header of their own.
 
 ### An engine of your own
 
@@ -367,6 +387,7 @@ go run ./examples/speak -lang hu "Szia, világ!"
 | [native](examples/native/main.go) | the native player speaking several sentences in one process |
 | [proxy](examples/proxy/main.go) | the Google engine through a proxy, with TLS verification on or off |
 | [custom-engine](examples/custom-engine/main.go) | an engine of your own that calls an HTTP speech server |
+| [azure](examples/azure/main.go) | the Azure Speech engine with voice, style, rate and pitch flags: an MP3 played, or a WAV saved |
 
 ## Migrating from v1
 
