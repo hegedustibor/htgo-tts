@@ -4,7 +4,7 @@ All notable changes to this project are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [2.0.0] - Unreleased
+## [2.0.0] - 2026-10-20
 
 A rewrite with the new import path `github.com/hegedustibor/htgo-tts/v2`. The v1 API stays available from the `v1.6` tag and the `v1` branch; [MIGRATION.md](MIGRATION.md) maps it to v2.
 
@@ -58,5 +58,5 @@ A rewrite with the new import path `github.com/hegedustibor/htgo-tts/v2`. The v1
 
 The last release of the v1 API, which added chunked `CreateSpeechBuff` output for longer text (#32). v1 stays available from this tag and from the `v1` branch, which is for critical fixes only.
 
-[2.0.0]: https://github.com/hegedustibor/htgo-tts/compare/v1.6...HEAD
+[2.0.0]: https://github.com/hegedustibor/htgo-tts/compare/v1.6...v2.0.0
 [1.6]: https://github.com/hegedustibor/htgo-tts/compare/v1.5...v1.6
