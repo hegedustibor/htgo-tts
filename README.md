@@ -20,6 +20,7 @@ This is version 2, a rewrite with a new import path. Coming from v1? [MIGRATION.
   - [OpenAI](#openai)
   - [Azure Speech](#azure-speech)
   - [Google Cloud Text-to-Speech](#google-cloud-text-to-speech)
+  - [A program on this machine](#a-program-on-this-machine)
   - [An engine of your own](#an-engine-of-your-own)
 - [Players](#players)
 - [Streams, cache and files](#streams-cache-and-files)
@@ -45,7 +46,7 @@ Every network and playback call takes a `context.Context`: a deadline or a cance
 ## Requirements
 
 - Go 1.25 or newer.
-- Network access: both engines call a web service.
+- Network access for the engines that call a web service; the command engine runs a speech program on the machine and works offline.
 - For the default player, mplayer in `PATH`; ffplay works the same way. The native player needs no external program and no cgo; on Linux, the machine that runs the program needs the ALSA shared library (package `libasound2`, or `libasound2t64` on Debian 13 and Ubuntu 24.04 and later). A program that only saves or synthesizes speech needs no player at all.
 - For the OpenAI engine, an API key; every request is billed.
 
@@ -183,6 +184,30 @@ e := googlecloud.New(
 ```
 
 Without `googlecloud.WithVoice` the service chooses a voice for the language of `googlecloud.WithLanguage`, en-US by default, preferring the gender of `googlecloud.WithGender`. The audio is sampled at 24 kHz, the rate the native player plays, unless `googlecloud.WithSampleRate` asks for another; `googlecloud.WithVolumeGain` raises or lowers the volume in decibels. The endpoint accepts 5000 bytes of text per request, so longer text is split at sentence and clause boundaries and requested piece by piece, which is sound for MP3 and PCM, while WAV and Opus pieces each carry a header of their own. The Chirp 3: HD voices take no speaking rate and no pitch.
+
+### A program on this machine
+
+`engine/command` runs a speech program installed on the machine and needs neither an API key nor a network connection, so speech works offline: the `say` command of macOS, espeak-ng, piper, or any other program that turns text into audio. Three engines are ready-made, all producing WAV:
+
+```go
+say := command.Say("Samantha")                     // macOS: say -v Samantha -o <file> --file-format=WAVE --data-format=LEI16@22050
+espeak := command.ESpeakNG("en-gb")                // Linux, macOS, Windows: espeak-ng -v en-gb --stdin --stdout
+piper := command.Piper("en_US-lessac-medium.onnx") // Linux, macOS, Windows: piper --model <model> --output_file <file>
+```
+
+An empty voice leaves the choice to the program. Any other program is a `command.New` with the format it produces, its name and its arguments. By default the text goes to the program's standard input and the audio streams from its standard output, so playback starts before the program has finished. Two placeholders change that: `{text}` passes the text as an argument instead, and `{out}` is the path of a temporary file, with the format's extension, that the program writes the audio to; the engine then waits for the program to exit, reads the file and deletes it afterwards. pico2wave, for example, takes the text as its last argument and writes a `.wav` file:
+
+```go
+e := command.New(engine.FormatWAV, "pico2wave", "-l", "en-GB", "-w", "{out}", "{text}")
+```
+
+`With` applies the options to a copy of the engine: `command.WithDir` sets the working directory, `command.WithEnv` adds environment variables, such as `ESPEAK_DATA_PATH` for espeak-ng, and `command.WithTimeout` bounds the run of the program.
+
+```go
+e := command.ESpeakNG("hu").With(command.WithTimeout(30 * time.Second))
+```
+
+A program that is not installed fails with `command.ErrProgramNotFound` and its name; a non-zero exit comes back as an error ending with the program's last standard error output; a done context interrupts the program. mplayer and ffplay play the WAV, and `Save` writes it; the native player plays MP3 only. `say` speaks with the default voice when the voice is not installed, without reporting it. espeak-ng and piper have not been run while writing this: their arguments come from their documentation.
 
 ### An engine of your own
 
@@ -367,7 +392,7 @@ The Google Translate engine takes one of the `voices` constants, a typed `voices
 - The Google Translate endpoint is unofficial and undocumented: it may change, break or rate-limit without notice, and nothing in this module can prevent that. It offers no choice of voice, only the language and the slow mode; voices are an OpenAI feature.
 - Text is spoken in pieces: the Google engine fetches about a hundred characters per request, the OpenAI engine 4096. The audio of the pieces is simply concatenated, which mplayer, ffplay and the native player play through, with a short pause audible at a boundary now and then. The Google engine produces 24 kHz MP3 only, and the OpenAI engine's container formats should be kept within one request.
 - The native player plays MP3 only, at one sample rate per process, and needs the ALSA shared library on Linux at run time.
-- Every engine of the module needs network access, and the OpenAI engine costs money per request.
+- Every engine of the module except `engine/command` needs network access, and the OpenAI engine costs money per request.
 - `player.FFplay()` has not been checked against a running ffplay.
 
 ## Docker
@@ -407,6 +432,7 @@ go run ./examples/speak -lang hu "Szia, világ!"
 | [custom-engine](examples/custom-engine/main.go) | an engine of your own that calls an HTTP speech server |
 | [azure](examples/azure/main.go) | the Azure Speech engine with voice, style, rate and pitch flags: an MP3 played, or a WAV saved |
 | [googlecloud](examples/googlecloud/main.go) | the Google Cloud Text-to-Speech engine with voice, rate and pitch flags: an MP3 played, or a WAV saved |
+| [command](examples/command/main.go) | a speech program on this machine, offline: say on macOS, espeak-ng, piper or any command with `{text}` and `{out}`; a WAV played with mplayer, or saved |
 
 ## Migrating from v1
 
