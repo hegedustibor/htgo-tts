@@ -5,7 +5,6 @@ go 1.25.0
 require (
 	github.com/ebitengine/oto/v3 v3.5.1
 	github.com/hajimehoshi/go-mp3 v0.3.4
-	github.com/hajimehoshi/oto/v2 v2.3.1
 )
 
 require (

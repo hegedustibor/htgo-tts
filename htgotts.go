@@ -1,194 +1,253 @@
+// Package htgotts turns text into speech: it asks a text-to-speech engine for
+// the audio of a text and plays it, saves it to a file or hands it over as a
+// stream or as bytes in memory.
+//
+// # Engines
+//
+// The engine does the synthesis and is the first argument of [New]. The
+// module ships two, in subpackages:
+//
+//   - engine/google speaks through the unofficial Google Translate endpoint:
+//     free, without an API key, one language per engine, as htgotts v1 did.
+//   - engine/openai speaks through the OpenAI speech API, or any
+//     OpenAI-compatible endpoint, with a choice of model, voice, speed and
+//     format; it needs an API key, and every request is billed.
+//
+// Any type that implements [engine.Engine], an interface of three methods,
+// works in their place, so a program switches engines by changing the one
+// line that creates its engine. Every engine of the module needs network
+// access.
+//
+// # Players
+//
+// [Speech.Speak], [Speech.Play] and [Speech.PlayFile] play audio through a
+// [player.Player]. The default is [player.MPlayer], which runs mplayer, so
+// mplayer must be installed; [WithPlayer] replaces it with [player.FFplay],
+// another [player.Command] that plays audio from its standard input, with
+// the native player of the player/native package, which plays MP3 through the
+// sound card without an external program, or with any other implementation of
+// the one-method interface. [player.Discard] plays nothing and serves tests
+// and programs that only download speech.
+//
+// # Cache
+//
+// Without [WithFolder] no file is written: the audio streams from the engine
+// to the player, or to the caller through [Speech.Open], [Speech.Synthesize]
+// and [Speech.SynthesizeTo]. With [WithFolder], the audio of every text is
+// kept in that folder under the name <fingerprint>_<md5 of the text>.<format>,
+// where the fingerprint is the engine's, and a text spoken before is served
+// from its file instead of the engine. A file appears under its final name
+// only once its audio has been read to the end, so an interrupted download or
+// playback leaves nothing behind. The Google engine's files carry the names
+// that htgotts v1 wrote, so a folder filled by v1 keeps serving hits.
+//
+// # Usage
+//
+//	tts, err := htgotts.New(google.New(voices.English), htgotts.WithFolder("audio"))
+//	if err != nil {
+//		log.Fatal(err)
+//	}
+//	if err := tts.Speak(context.Background(), "Hello, world!"); err != nil {
+//		log.Fatal(err)
+//	}
+//
+// Every network and playback call takes a [context.Context] and stops when it
+// is done. Errors are wrapped, so errors.Is and errors.As work on them: the
+// errors of the engine, among them [engine.ErrEmptyText], *[engine.HTTPError]
+// and the error of a done context, and the errors of the player, among them
+// [player.ErrPlayerNotFound], come through unchanged. The package and the
+// engines and players of the module build without cgo.
 package htgotts
 
 import (
 	"bytes"
-	"crypto/md5"
-	"crypto/tls"
-	"encoding/hex"
+	"context"
+	"errors"
 	"fmt"
 	"io"
-	"net/http"
-	"net/url"
 	"os"
+	"path/filepath"
 
-	"github.com/hegedustibor/htgo-tts/v2/handlers"
+	"github.com/hegedustibor/htgo-tts/v2/engine"
+	"github.com/hegedustibor/htgo-tts/v2/internal/cache"
+	"github.com/hegedustibor/htgo-tts/v2/player"
 )
 
-/**
- * Required:
- * - mplayer
- *
- * Use:
- *
- * speech := htgotts.Speech{Folder: "audio", Language: "en", Handler: MPlayer}
- */
+var (
+	// ErrNilEngine is returned by New when the engine is nil.
+	ErrNilEngine = errors.New("htgotts: nil engine")
 
-// Speech struct
+	// ErrNilPlayer is returned by New when WithPlayer is given a nil player.
+	ErrNilPlayer = errors.New("htgotts: nil player")
+
+	// ErrEmptyFolder is returned by New when WithFolder is given an empty
+	// folder name.
+	ErrEmptyFolder = errors.New("htgotts: empty folder")
+
+	// ErrEmptyPath is returned by Save when the path is empty.
+	ErrEmptyPath = errors.New("htgotts: empty path")
+)
+
+// Speech synthesizes text with an engine and plays the audio with a player,
+// keeping the audio in a folder when one is given. Create it with [New]. A
+// Speech is safe for concurrent use when its engine and player are.
 type Speech struct {
-	Folder   string
-	Language string
-	Proxy    string
-	Handler  handlers.PlayerInterface
+	engine engine.Engine
+	player player.Player
+	cache  *cache.Store // nil without WithFolder: nothing is written then
 }
 
-// Creates a speech file with a given name
-func (speech *Speech) CreateSpeechFile(text string, fileName string) (string, error) {
-	var err error
+// Option configures the Speech that [New] creates.
+type Option func(*Speech) error
 
-	f := speech.Folder + "/" + fileName + ".mp3"
-	if err = speech.createFolderIfNotExists(speech.Folder); err != nil {
-		return "", err
+// New returns a Speech that synthesizes with e and, unless [WithPlayer] says
+// otherwise, plays through mplayer. A nil engine fails with [ErrNilEngine].
+// The options are applied in order, and the first invalid one makes New fail
+// with its error: [ErrNilPlayer] or [ErrEmptyFolder]. New touches neither the
+// network nor the file system; the cache folder is created when the first
+// audio is written to it.
+func New(e engine.Engine, opts ...Option) (*Speech, error) {
+	if e == nil {
+		return nil, ErrNilEngine
 	}
-
-	if err = speech.downloadIfNotExists(f, text); err != nil {
-		return "", err
-	}
-
-	return f, nil
-}
-
-// Creates a speech message with a given name
-func (speech *Speech) CreateSpeechBuff(text string, fileName string) (io.Reader, error) {
-	data := []rune(text)
-
-	chunkSize := len(data)
-	if len(data) > 32 {
-		chunkSize = 32
-	}
-
-	urls := make([]string, 0)
-	for prev, i := 0, 0; i < len(data); i++ {
-		if i%chunkSize == 0 && i != 0 {
-			chunk := string(data[prev:i])
-			url := fmt.Sprintf("http://translate.google.com/translate_tts?ie=UTF-8&total=1&idx=0&textlen=%d&client=tw-ob&q=%s&tl=%s", chunkSize, url.QueryEscape(chunk), speech.Language)
-			urls = append(urls, url)
-			prev = i
-		} else if i == len(data)-1 {
-			chunk := string(data[prev:])
-			url := fmt.Sprintf("http://translate.google.com/translate_tts?ie=UTF-8&total=1&idx=0&textlen=%d&client=tw-ob&q=%s&tl=%s", chunkSize, url.QueryEscape(chunk), speech.Language)
-			urls = append(urls, url)
-			prev = i
-		}
-	}
-
-	buf := new(bytes.Buffer)
-	for _, url := range urls {
-		r, err := http.Get(url)
-		if err != nil {
+	s := &Speech{engine: e, player: player.MPlayer()}
+	for _, opt := range opts {
+		if err := opt(s); err != nil {
 			return nil, err
 		}
+	}
+	return s, nil
+}
 
-		_, err = buf.ReadFrom(r.Body)
-		if err != nil {
-			return nil, err
+// WithFolder keeps the audio of every text in the folder dir and serves a
+// text spoken before from its file, so that the engine is asked for it only
+// once. The folder and its parents are created when the first audio is
+// written. An empty dir fails New with [ErrEmptyFolder].
+func WithFolder(dir string) Option {
+	return func(s *Speech) error {
+		if dir == "" {
+			return ErrEmptyFolder
 		}
-		r.Body.Close()
+		s.cache = &cache.Store{Dir: dir}
+		return nil
 	}
-
-	f := speech.Folder + "/" + fileName + ".mp3"
-	output, err := os.Create(f)
-	if err != nil {
-		return nil, err
-	}
-
-	_, err = io.Copy(output, buf)
-	if err != nil {
-		return nil, err
-	}
-
-	return buf, nil
 }
 
-// Plays an existent .mp3 file
-func (speech *Speech) PlaySpeechFile(fileName string) error {
-	if speech.Handler == nil {
-		mplayer := handlers.MPlayer{}
-		return mplayer.Play(fileName)
+// WithPlayer plays the audio with p instead of mplayer. The player must
+// understand the engine's format: mplayer and ffplay play every format the
+// engines produce, the native player plays MP3 only. A nil player fails New
+// with [ErrNilPlayer].
+func WithPlayer(p player.Player) Option {
+	return func(s *Speech) error {
+		if p == nil {
+			return ErrNilPlayer
+		}
+		s.player = p
+		return nil
 	}
-
-	return speech.Handler.Play(fileName)
 }
 
-// Speak downloads speech and plays it using mplayer
-func (speech *Speech) Speak(text string) error {
+// Open returns the audio of text as a stream, in the engine's format, to be
+// read and then closed by the caller. Without a cache folder the stream comes
+// straight from the engine, so its first bytes are available before the whole
+// text has been synthesized. With one, a text spoken before is read from its
+// file, and a new text is written to the folder while the stream is read; the
+// file is kept only when the stream has been read to io.EOF before Close.
+//
+// The errors of the engine are returned unchanged: [engine.ErrEmptyText] for
+// empty text, *[engine.HTTPError] for an unexpected answer of the speech
+// service, and an error wrapping ctx.Err() when ctx is done.
+func (s *Speech) Open(ctx context.Context, text string) (io.ReadCloser, error) {
+	if s.cache == nil {
+		return s.engine.Synthesize(ctx, text)
+	}
+	return s.cache.Open(ctx, s.engine.Fingerprint(), text, s.engine.Format(), func(ctx context.Context) (io.ReadCloser, error) {
+		return s.engine.Synthesize(ctx, text)
+	})
+}
 
-	var err error
-	generatedHashName := speech.generateHashName(text)
+// Speak synthesizes text, through the cache when there is one, and plays it,
+// returning when playback has finished or when ctx is done. The player's
+// error comes first; when playback succeeds but closing the audio fails, that
+// error is returned. The audio is cached only when the player has read it to
+// the end, so an interrupted playback leaves no file behind.
+func (s *Speech) Speak(ctx context.Context, text string) error {
+	return s.withAudio(ctx, text, func(audio io.Reader) error {
+		return s.player.Play(ctx, audio)
+	})
+}
 
-	fileName, err := speech.CreateSpeechFile(text, generatedHashName)
+// Synthesize returns the audio of text, in the engine's format, in memory.
+// Without a cache folder it writes no file.
+func (s *Speech) Synthesize(ctx context.Context, text string) ([]byte, error) {
+	var buf bytes.Buffer
+	if err := s.SynthesizeTo(ctx, text, &buf); err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
+}
+
+// SynthesizeTo writes the audio of text, in the engine's format, to w.
+// Without a cache folder it writes no file.
+func (s *Speech) SynthesizeTo(ctx context.Context, text string, w io.Writer) error {
+	return s.withAudio(ctx, text, func(audio io.Reader) error {
+		_, err := io.Copy(w, audio)
+		return err
+	})
+}
+
+// Save writes the audio of text to the file at path and returns the path it
+// wrote. When path has no extension, the one of the engine's format is
+// appended, so "out/hello" becomes "out/hello.mp3" with an MP3 engine. The
+// parent directory is created when needed, and the file is written
+// atomically: it appears under its name only once the audio is complete, and
+// a failed download leaves a file that was there as it was. With a cache
+// folder, the audio of a text spoken before comes from the cache, and a new
+// text is cached as well. An empty path fails with [ErrEmptyPath].
+func (s *Speech) Save(ctx context.Context, text, path string) (string, error) {
+	if path == "" {
+		return "", ErrEmptyPath
+	}
+	if filepath.Ext(path) == "" {
+		path += s.engine.Format().Ext()
+	}
+	err := s.withAudio(ctx, text, func(audio io.Reader) error {
+		return cache.WriteFile(path, audio)
+	})
+	if err != nil {
+		return "", err
+	}
+	return path, nil
+}
+
+// Play plays audio with the player and returns when playback has finished or
+// when ctx is done. The audio must be in a format the player understands,
+// normally the one of the engine.
+func (s *Speech) Play(ctx context.Context, audio io.Reader) error {
+	return s.player.Play(ctx, audio)
+}
+
+// PlayFile plays the audio file at path, for example one written by Save,
+// with the player.
+func (s *Speech) PlayFile(ctx context.Context, path string) error {
+	f, err := os.Open(path)
+	if err != nil {
+		return fmt.Errorf("htgotts: %w", err)
+	}
+	defer f.Close()
+	return s.player.Play(ctx, f)
+}
+
+// withAudio opens the audio of text, hands it to use and closes it. The error
+// of use comes first; when use succeeds, the error of Close is returned.
+func (s *Speech) withAudio(ctx context.Context, text string, use func(audio io.Reader) error) error {
+	audio, err := s.Open(ctx, text)
 	if err != nil {
 		return err
 	}
-
-	return speech.PlaySpeechFile(fileName)
-}
-
-/**
- * Create the folder if does not exists.
- */
-func (speech *Speech) createFolderIfNotExists(folder string) error {
-	dir, err := os.Open(folder)
-	if os.IsNotExist(err) {
-		return os.MkdirAll(folder, 0700)
+	err = use(audio)
+	if closeErr := audio.Close(); err == nil {
+		err = closeErr
 	}
-
-	dir.Close()
-	return nil
-}
-
-/**
- * Download the voice file if does not exists.
- */
-func (speech *Speech) downloadIfNotExists(fileName string, text string) error {
-	f, err := os.Open(fileName)
-	if err != nil {
-		dlURL := fmt.Sprintf("http://translate.google.com/translate_tts?ie=UTF-8&total=1&idx=0&textlen=32&client=tw-ob&q=%s&tl=%s", url.QueryEscape(text), speech.Language)
-
-		response, err := speech.urlResponse(dlURL)
-
-		if err != nil {
-			return err
-		}
-		defer response.Body.Close()
-
-		output, err := os.Create(fileName)
-		if err != nil {
-			return err
-		}
-
-		_, err = io.Copy(output, response.Body)
-		return err
-	}
-
-	f.Close()
-	return nil
-}
-
-func (speech *Speech) generateHashName(name string) string {
-	hash := md5.Sum([]byte(name))
-	return fmt.Sprintf("%s_%s", speech.Language, hex.EncodeToString(hash[:]))
-}
-
-func (speech *Speech) urlResponse(dlUrl string) (resp *http.Response, err error) {
-	var (
-		response *http.Response
-	)
-
-	if speech.Proxy != "" {
-		var proxyURL *url.URL
-		proxyURL, err = url.Parse(speech.Proxy)
-
-		if err != nil {
-			return response, err
-		}
-
-		httpCli := &http.Client{Transport: &http.Transport{
-			Proxy:           http.ProxyURL(proxyURL),
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-		}}
-
-		return httpCli.Get(dlUrl)
-	}
-
-	return http.Get(dlUrl)
+	return err
 }
