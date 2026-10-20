@@ -20,6 +20,7 @@ This is version 2, a rewrite with a new import path. Coming from v1? [MIGRATION.
   - [OpenAI](#openai)
   - [Azure Speech](#azure-speech)
   - [Google Cloud Text-to-Speech](#google-cloud-text-to-speech)
+  - [ElevenLabs](#elevenlabs)
   - [A program on this machine](#a-program-on-this-machine)
   - [An engine of your own](#an-engine-of-your-own)
 - [Players](#players)
@@ -184,6 +185,28 @@ e := googlecloud.New(
 ```
 
 Without `googlecloud.WithVoice` the service chooses a voice for the language of `googlecloud.WithLanguage`, en-US by default, preferring the gender of `googlecloud.WithGender`. The audio is sampled at 24 kHz, the rate the native player plays, unless `googlecloud.WithSampleRate` asks for another; `googlecloud.WithVolumeGain` raises or lowers the volume in decibels. The endpoint accepts 5000 bytes of text per request, so longer text is split at sentence and clause boundaries and requested piece by piece, which is sound for MP3 and PCM, while WAV and Opus pieces each carry a header of their own. The Chirp 3: HD voices take no speaking rate and no pitch.
+
+### ElevenLabs
+
+`engine/elevenlabs` posts to the ElevenLabs text to speech API, `https://api.elevenlabs.io/v1/text-to-speech/<voice>/stream`: a paid service with a free monthly allowance, a library of thousands of voices plus cloned and designed voices of your own, and models that speak dozens of languages with a chosen stability, similarity, style, speed and output format. The API key comes from `elevenlabs.WithKey` or the `ELEVENLABS_API_KEY` environment variable; it only ever travels in the `xi-api-key` header and never appears in an error or a file name. Every request is billed, by characters, to the key's account.
+
+```go
+e := elevenlabs.New(
+	elevenlabs.WithKey(key),                        // or leave it out and set ELEVENLABS_API_KEY
+	elevenlabs.WithVoice(elevenlabs.VoiceSarah),    // a premade voice, or any voice of the account as elevenlabs.Voice("id")
+	elevenlabs.WithModel(elevenlabs.ModelFlashV25), // eleven_multilingual_v2 (default), eleven_flash_v2_5, eleven_v3, eleven_v4, ...
+	elevenlabs.WithLanguage("hu"),                  // ISO 639-1 code, enforced by the models that support it
+	elevenlabs.WithStability(0.4),                  // 0 to 1
+	elevenlabs.WithSimilarity(0.8),                 // 0 to 1
+	elevenlabs.WithSpeed(1.1),                      // 0.7 to 1.2
+	elevenlabs.WithFormat(engine.FormatMP3),        // mp3 (default, 44.1 kHz), pcm (24 kHz) or opus (48 kHz)
+	elevenlabs.WithTimeout(30*time.Second),         // per request; 60 s by default
+)
+```
+
+`elevenlabs.Voice` and `elevenlabs.Model` are string types: the constants are the premade voices that every account has and the documented models, and the ID of a voice of your own, from the `GET /v1/voices` endpoint or from the voice's page in the ElevenLabs app, is `elevenlabs.Voice("id")`. `elevenlabs.WithStyle` and `elevenlabs.WithSpeakerBoost` set the remaining two voice settings; the engine sends only the settings it was given. `elevenlabs.WithOutputFormat("mp3_22050_32", engine.FormatMP3)` requests any other format of the service by its name, and `elevenlabs.WithBaseURL("https://api.eu.residency.elevenlabs.io/v1")` reaches the data residency endpoints. The streaming endpoint produces no WAV, AAC or FLAC; PCM is WAV without its header.
+
+**Sample rate.** The MP3 of this engine is sampled at 44.1 kHz, while the other web engines produce 24 kHz MP3, and the native player opens the sound card at the sample rate of the first MP3 it plays: one process cannot play this engine and the others through it, unless `elevenlabs.WithOutputFormat("mp3_24000_48", engine.FormatMP3)` asks for a 24 kHz MP3. Text longer than 2500 characters is split at sentence and clause boundaries and requested piece by piece, each piece with its neighbours as `previous_text` and `next_text` so that the speech stays continuous across the cut; that is sound for MP3 and PCM, while every Opus piece is a stream of its own.
 
 ### A program on this machine
 
@@ -432,6 +455,7 @@ go run ./examples/speak -lang hu "Szia, világ!"
 | [custom-engine](examples/custom-engine/main.go) | an engine of your own that calls an HTTP speech server |
 | [azure](examples/azure/main.go) | the Azure Speech engine with voice, style, rate and pitch flags: an MP3 played, or a WAV saved |
 | [googlecloud](examples/googlecloud/main.go) | the Google Cloud Text-to-Speech engine with voice, rate and pitch flags: an MP3 played, or a WAV saved |
+| [elevenlabs](examples/elevenlabs/main.go) | the ElevenLabs engine with voice, model, language and speed flags: an MP3 played, or saved |
 | [command](examples/command/main.go) | a speech program on this machine, offline: say on macOS, espeak-ng, piper or any command with `{text}` and `{out}`; a WAV played with mplayer, or saved |
 
 ## Migrating from v1

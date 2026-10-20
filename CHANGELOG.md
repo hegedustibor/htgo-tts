@@ -14,6 +14,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - `examples/googlecloud`, a program that speaks or saves a sentence through the Google Cloud Text-to-Speech engine.
 - `engine/command`: an engine that runs a speech program installed on the machine, such as the `say` command of macOS, espeak-ng or piper, with the text on its standard input or in an argument and the audio from its standard output or from a file it writes. `Say`, `ESpeakNG` and `Piper` are ready-made, `New` takes any other program, and `WithDir`, `WithEnv` and `WithTimeout` set the working directory, the environment and a time limit. It needs no API key and no network, so speech works offline (#14).
 - `examples/command`, a program that speaks or saves a sentence through a speech program on the machine.
+- `engine/elevenlabs`: an engine for the ElevenLabs text to speech API, with a choice of voice, model, language, stability, similarity, style, speaker boost, speed and output format. The API key comes from `WithKey` or from `ELEVENLABS_API_KEY`, `WithBaseURL` reaches the data residency endpoints, and long text is requested piece by piece with `previous_text` and `next_text` for continuity. It needs no SDK and no cgo.
+- `examples/elevenlabs`, a program that speaks or saves a sentence through the ElevenLabs engine.
 
 ## [2.0.0] - 2026-10-20
 
